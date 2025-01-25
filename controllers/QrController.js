@@ -10,7 +10,7 @@ const ScanLog = require('../models/QrSchema'); // Adjust the path to your model
 exports.Qrcode = async (req, res) => {
   try {
     const slug = uuidv4(); // Unique slug
-    const qrUrl = `http://192.168.21.56:4000/api/scan/${slug}`; // Embed slug in the URL
+    const qrUrl = `https://qr-server-qwyi.onrender.com/api/scan/${slug}`; // Embed slug in the URL
 
     QRCode.toBuffer(qrUrl, { type: "png" }, (err, buffer) => {
       if (err) {
