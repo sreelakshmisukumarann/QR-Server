@@ -7,7 +7,7 @@ const QRSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    source: {
+    sourceIdentifier: {
       type: String,
       required: true,
     },
@@ -16,8 +16,11 @@ const QRSchema = new mongoose.Schema(
       required: true, // IP address of the scanner
     },
   },
-  { timestamps: true } // This option is passed outside the field definitions
+  { timestamps: true } // This option automatically adds `createdAt` and `updatedAt` fields
 );
+
+// Add a unique index on the combination of `slug` and `sourceIdentifier`
+QRSchema.index({ slug: 1, sourceIdentifier: 1 }, { unique: true });
 
 // Create model
 const ScanLog = mongoose.model("ScanLog", QRSchema);

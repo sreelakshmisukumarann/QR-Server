@@ -32,31 +32,43 @@ exports.Qrcode = async (req, res) => {
 // Controller to log scan details (slug and source identifier)
 exports.ScanDetails = async (req, res) => {
   try {
-    const { slug } = req.params;
+    const { slug } = req.params; // Get slug from request parameters
+    const sourceIdentifier = req.headers["user-agent"] || "Unknown"; // Use User-Agent as sourceIdentifier
+    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress; // Get IP address
 
-    // Get source information (e.g., IP address and User-Agent)
-    const source = req.headers["user-agent"];
-    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    // Check if an entry for the same slug and sourceIdentifier exists
+    let scanEntry = await ScanLog.findOne({ slug, sourceIdentifier });
 
-    // Save scan details in the database
-    const scanEntry = new ScanLog({
-      slug,
-      source,
-      ipAddress,
-      scannedAt: new Date(),
-    });
+    if (scanEntry) {
+      // If found, just update the `updatedAt` timestamp
+      scanEntry.updatedAt = new Date();
+      await scanEntry.save();
 
-    await scanEntry.save();
+      return res.status(200).json({
+        message: "Scan details updated successfully",
+        data: scanEntry,
+      });
+    } else {
+      // If not found, create a new scan entry
+      scanEntry = new ScanLog({
+        slug,
+        sourceIdentifier,
+        ipAddress,
+      });
 
-    res.status(200).json({
-      message: "Scan details logged successfully",
-      data: { slug, source, ipAddress },
-    });
+      await scanEntry.save();
+
+      return res.status(201).json({
+        message: "New scan details logged successfully",
+        data: scanEntry,
+      });
+    }
   } catch (error) {
     console.error("Error logging scan details:", error);
     res.status(500).json({ message: "Error logging scan details" });
   }
 };
+
 
 exports.ScanDetailsGet = async (req, res) => {
   try {
@@ -69,7 +81,7 @@ exports.ScanDetailsGet = async (req, res) => {
     // Save scan details in the database
     const scanEntry = new ScanLog({
       slug,
-      source,
+      sourceIdentifier,
       ipAddress,
       scannedAt: new Date(),
     });

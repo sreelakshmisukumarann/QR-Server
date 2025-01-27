@@ -1,17 +1,15 @@
-express = require('express')
+const express = require('express');
+const QrController = require('../controllers/QrController');
 
-const QrController = require('../controllers/QrController')
+const router = express.Router();
 
-var router = express.Router();
-
-// router.post('/scan/add-details',QrController.AddScanning)
 // Route to generate the QR code
 router.get('/api/qr', QrController.Qrcode);
 
-
-// Route to log scan details
+// Route to log scan details (POST for JSON responses)
 router.post('/api/scan/:slug', QrController.ScanDetails);
-router.get('/api/scan/:slug', QrController.ScanDetailsGet); // Handle GET requests for QR scans
 
+// Route to log scan details and return an HTML page (GET for browser scanning)
+router.get('/api/scan/:slug', QrController.ScanDetailsGet);
 
-module.exports = router
+module.exports = router;
