@@ -1,22 +1,26 @@
 const mongoose = require("mongoose");
 
+// Create schema
 const QRSchema = new mongoose.Schema(
   {
     slug: {
       type: String,
       required: true,
-      unique: true,
     },
-    sourceIdentifier: {
+    source: {
       type: String,
       required: true,
     },
     ipAddress: {
       type: String,
-      required: true,
+      required: true, // IP address of the scanner
     },
   },
-  { timestamps: true }
+  { timestamps: true } // This option is passed outside the field definitions
 );
 
-module.exports = mongoose.model("ScanLog", QRSchema);
+// Create model
+const ScanLog = mongoose.model("ScanLog", QRSchema);
+
+// Export the model
+module.exports = ScanLog;
