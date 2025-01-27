@@ -1,16 +1,12 @@
-const { v4: uuidv4 } = require("uuid"); // Import UUID generator
-const QRCode = require('qrcode'); // QR code generation library
+const { v4: uuidv4 } = require("uuid");
+const QRCode = require('qrcode');
 const ScanLog = require('../models/QrSchema'); // Adjust the path to your model
 
-
-// const { v4: uuidv4 } = require("uuid");
-// const QRCode = require("qrcode");
-// const ScanLog = require("../models/QrSchema");
-
+// Generate the QR code
 exports.Qrcode = async (req, res) => {
   try {
-    const slug = uuidv4(); // Unique slug
-    const qrUrl = `https://qr-server-qwyi.onrender.com/api/scan/${slug}`; // Embed slug in the URL
+    const slug = uuidv4(); // Generate a unique slug
+    const qrUrl = `https://qr-server-qwyi.onrender.com/api/scan/${slug}`; // Embed slug in URL
 
     QRCode.toBuffer(qrUrl, { type: "png" }, (err, buffer) => {
       if (err) {
@@ -26,15 +22,12 @@ exports.Qrcode = async (req, res) => {
   }
 };
 
-
-
-
 // Controller to log scan details (slug and source identifier)
 exports.ScanDetails = async (req, res) => {
   try {
     const { slug } = req.params; // Get slug from request parameters
     const sourceIdentifier = req.headers["user-agent"] || "Unknown"; // Use User-Agent as sourceIdentifier
-    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress; // Get IP address
+    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "Unknown IP"; // Get IP address
 
     // Check if an entry for the same slug and sourceIdentifier exists
     let scanEntry = await ScanLog.findOne({ slug, sourceIdentifier });
@@ -69,14 +62,14 @@ exports.ScanDetails = async (req, res) => {
   }
 };
 
-
+// Controller to log scan details and return HTML page (GET for browser scanning)
 exports.ScanDetailsGet = async (req, res) => {
   try {
-    const { slug } = req.params;
+    const { slug } = req.params; // Get slug from URL parameters
 
     // Get source information (e.g., User-Agent and IP address)
-    const source = req.headers["user-agent"];
-    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const sourceIdentifier = req.headers["user-agent"] || "Unknown"; 
+    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "Unknown IP"; 
 
     // Save scan details in the database
     const scanEntry = new ScanLog({
@@ -88,6 +81,7 @@ exports.ScanDetailsGet = async (req, res) => {
 
     await scanEntry.save();
 
+    // Return an HTML page with a thank you message
     res.status(200).send(`
       <html>
         <head>
@@ -104,5 +98,3 @@ exports.ScanDetailsGet = async (req, res) => {
     res.status(500).send("Error logging scan details.");
   }
 };
-
-

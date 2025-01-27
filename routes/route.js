@@ -12,4 +12,10 @@ router.post('/api/scan/:slug', QrController.ScanDetails);
 // Route to log scan details and return an HTML page (GET for browser scanning)
 router.get('/api/scan/:slug', QrController.ScanDetailsGet);
 
+// Generic error handler for route errors
+router.use((err, req, res, next) => {
+  console.error('Error occurred:', err);
+  res.status(500).json({ message: 'Internal Server Error' });
+});
+
 module.exports = router;
