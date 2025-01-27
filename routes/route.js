@@ -1,21 +1,17 @@
-const express = require('express');
-const QrController = require('../controllers/QrController');
+express = require('express')
 
-const router = express.Router();
+const QrController = require('../controllers/QrController')
 
+var router = express.Router();
+
+// router.post('/scan/add-details',QrController.AddScanning)
 // Route to generate the QR code
 router.get('/api/qr', QrController.Qrcode);
 
-// Route to log scan details (POST for JSON responses)
+
+// Route to log scan details
 router.post('/api/scan/:slug', QrController.ScanDetails);
+router.get('/api/scan/:slug', QrController.ScanDetailsGet); // Handle GET requests for QR scans
 
-// Route to log scan details and return an HTML page (GET for browser scanning)
-router.get('/api/scan/:slug', QrController.ScanDetailsGet);
 
-// Generic error handler for route errors
-router.use((err, req, res, next) => {
-  console.error('Error occurred:', err);
-  res.status(500).json({ message: 'Internal Server Error' });
-});
-
-module.exports = router;
+module.exports = router
