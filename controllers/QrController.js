@@ -15,10 +15,11 @@ const getIpAddress = (req) => {
 // Generate the QR code
 exports.Qrcode = async (req, res) => {
   try {
-    const deviceIdentifier = getDeviceIdentifier(req);
+    const sourceIdentifier = getDeviceIdentifier(req); // Get or generate device identifier
+    const ipAddress = getIpAddress(req); // Get IP address
 
-    // Check if the device already has a slug
-    let scanEntry = await ScanLog.findOne({ sourceIdentifier: deviceIdentifier });
+    // Check if the device (sourceIdentifier) already has a slug
+    let scanEntry = await ScanLog.findOne({ sourceIdentifier });
 
     // If no slug exists for the device, generate a new one
     if (!scanEntry) {
@@ -26,11 +27,12 @@ exports.Qrcode = async (req, res) => {
       const baseUrl = process.env.BASE_URL || "https://qr-server-qwyi.onrender.com";
       const qrUrl = `${baseUrl}/api/scan/${slug}`; // Embed slug in URL
 
-      // Save the new slug and device identifier in the database
+      // Save the new slug, sourceIdentifier, and IP address in the database
       scanEntry = new ScanLog({
         slug,
-        sourceIdentifier: deviceIdentifier,
-        ipAddress: getIpAddress(req),
+        sourceIdentifier,
+        ipAddress,
+        timestamp: new Date(), // Initial timestamp
       });
 
       await scanEntry.save();
@@ -57,7 +59,7 @@ exports.Qrcode = async (req, res) => {
 exports.ScanDetails = async (req, res) => {
   try {
     const { slug } = req.params; // Get slug from request parameters
-    const deviceIdentifier = getDeviceIdentifier(req); // Get or generate device identifier
+    const sourceIdentifier = getDeviceIdentifier(req); // Get or generate device identifier
     const ipAddress = getIpAddress(req); // Get IP address
 
     // Find the scan entry for the slug
@@ -67,28 +69,13 @@ exports.ScanDetails = async (req, res) => {
       return res.status(404).json({ message: "Slug not found" });
     }
 
-    // If the device scanning is different from the one that generated the slug, create a new entry
-    if (scanEntry.sourceIdentifier !== deviceIdentifier) {
-      const newSlug = uuidv4(); // Generate a new slug for the new device
-      const baseUrl = process.env.BASE_URL || "https://qr-server-qwyi.onrender.com";
-      const qrUrl = `${baseUrl}/api/scan/${newSlug}`;
-
-      const newScanEntry = new ScanLog({
-        slug: newSlug,
-        sourceIdentifier: deviceIdentifier,
-        ipAddress: ipAddress,
-      });
-
-      await newScanEntry.save();
-
-      return res.status(200).json({
-        message: "New device detected. A new QR code has been generated.",
-        data: newScanEntry,
-      });
+    // If the device scanning is different from the one that generated the slug, deny the scan
+    if (scanEntry.sourceIdentifier !== sourceIdentifier) {
+      return res.status(400).json({ message: "This QR code is not for your device" });
     }
 
     // If the same device scans again, update the timestamp
-    scanEntry.updatedAt = new Date();
+    scanEntry.timestamp = new Date();
     await scanEntry.save();
 
     return res.status(200).json({
@@ -105,7 +92,7 @@ exports.ScanDetails = async (req, res) => {
 exports.ScanDetailsGet = async (req, res) => {
   try {
     const { slug } = req.params; // Get slug from URL parameters
-    const deviceIdentifier = getDeviceIdentifier(req); // Get or generate device identifier
+    const sourceIdentifier = getDeviceIdentifier(req); // Get or generate device identifier
     const ipAddress = getIpAddress(req); // Get IP address
 
     // Find the scan entry for the slug
@@ -122,35 +109,20 @@ exports.ScanDetailsGet = async (req, res) => {
       `);
     }
 
-    // If the device scanning is different from the one that generated the slug, create a new entry
-    if (scanEntry.sourceIdentifier !== deviceIdentifier) {
-      const newSlug = uuidv4(); // Generate a new slug for the new device
-      const baseUrl = process.env.BASE_URL || "https://qr-server-qwyi.onrender.com";
-      const qrUrl = `${baseUrl}/api/scan/${newSlug}`;
-
-      const newScanEntry = new ScanLog({
-        slug: newSlug,
-        sourceIdentifier: deviceIdentifier,
-        ipAddress: ipAddress,
-      });
-
-      await newScanEntry.save();
-
-      return res.status(200).send(`
+    // If the device scanning is different from the one that generated the slug, deny the scan
+    if (scanEntry.sourceIdentifier !== sourceIdentifier) {
+      return res.status(400).send(`
         <html>
-          <head><title>New Device Detected</title></head>
-          <body style="text-align: center; font-family: Arial, sans-serif;">
-            <h1>New Device Detected</h1>
-            <p>A new QR code has been generated for your device.</p>
-            <p>Slug: ${newSlug}</p>
-            <p>IP Address: ${ipAddress}</p>
+          <head><title>Error</title></head>
+          <body>
+            <h1>This QR code is not for your device</h1>
           </body>
         </html>
       `);
     }
 
     // If the same device scans again, update the timestamp
-    scanEntry.updatedAt = new Date();
+    scanEntry.timestamp = new Date();
     await scanEntry.save();
 
     // Return an HTML page with a thank you message
@@ -164,6 +136,7 @@ exports.ScanDetailsGet = async (req, res) => {
           <p>Thank you for scanning the QR code.</p>
           <p>Slug: ${slug}</p>
           <p>IP Address: ${ipAddress}</p>
+          <p>Device Identifier: ${sourceIdentifier}</p>
         </body>
       </html>
     `);
