@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 
-// Create schema
 const QRSchema = new mongoose.Schema(
   {
     slug: {
       type: String,
       required: true,
+      unique: true,
     },
     sourceIdentifier: {
       type: String,
@@ -13,17 +13,10 @@ const QRSchema = new mongoose.Schema(
     },
     ipAddress: {
       type: String,
-      required: true, // IP address of the scanner
+      required: true,
     },
   },
-  { timestamps: true } // This option automatically adds `createdAt` and `updatedAt` fields
+  { timestamps: true }
 );
 
-// Add a unique index on the combination of `slug` and `sourceIdentifier`
-QRSchema.index({ slug: 1, sourceIdentifier: 1 }, { unique: true });
-
-// Create model
-const ScanLog = mongoose.model("ScanLog", QRSchema);
-
-// Export the model
-module.exports = ScanLog;
+module.exports = mongoose.model("ScanLog", QRSchema);
