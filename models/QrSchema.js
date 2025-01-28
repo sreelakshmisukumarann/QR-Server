@@ -13,10 +13,10 @@ const QRSchema = new mongoose.Schema(
     },
     ipAddress: {
       type: String,
-      required: true, // IP address of the scanner
+      required: true,
     },
   },
-  { timestamps: true } 
+  { timestamps: true } // Adds createdAt and updatedAt timestamps
 );
 
 // Create model
