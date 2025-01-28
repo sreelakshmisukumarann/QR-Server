@@ -5,8 +5,7 @@ const ScanLog = require("../models/QrSchema"); // Adjust the path to your model
 // Generate QR Code
 exports.Qrcode = async (req, res) => {
   try {
-    const slug = uuidv4(); // Unique slug
-    const qrUrl = `https://qr-server-qwyi.onrender.com/api/scan/${slug}`; // Include slug in the URL
+    const qrUrl = `https://qr-server-qwyi.onrender.com/api/scan`; // Base URL for scanning QR codes
 
     // Generate QR code as a PNG image buffer
     QRCode.toBuffer(qrUrl, { type: "png" }, (err, buffer) => {
@@ -27,26 +26,27 @@ exports.Qrcode = async (req, res) => {
 exports.ScanDetails = async (req, res) => {
   try {
     const { slug } = req.params; // Extract slug from request params
-    const source = req.headers["user-agent"]; // Get User-Agent
+    const source = req.headers["user-agent"]; // Get User-Agent (source identifier)
     const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress; // Get IP address
 
-    // Check if the source has already scanned
+    // Check if the source (device) has already scanned any QR code
     const existingScan = await ScanLog.findOne({ source });
 
     if (existingScan) {
-      // Update the timestamp of the existing entry
-      existingScan.timestamp = new Date();
+      // Update the timestamp if the same phone scans again
+      existingScan.updatedAt = new Date();
       await existingScan.save();
 
       return res.status(200).json({
         message: "Scan details updated successfully",
-        data: { slug, source, ipAddress },
+        data: { slug: existingScan.slug, source, ipAddress },
       });
     }
 
-    // Save a new scan entry if not found
+    // Save a new scan entry for a new device (different phone)
+    const newSlug = uuidv4(); // Generate a unique slug for the new device
     const scanEntry = new ScanLog({
-      slug,
+      slug: newSlug,
       source,
       ipAddress,
     });
@@ -55,7 +55,7 @@ exports.ScanDetails = async (req, res) => {
 
     res.status(200).json({
       message: "Scan details logged successfully",
-      data: { slug, source, ipAddress },
+      data: { slug: newSlug, source, ipAddress },
     });
   } catch (error) {
     console.error("Error logging scan details:", error);
@@ -70,12 +70,12 @@ exports.ScanDetailsGet = async (req, res) => {
     const source = req.headers["user-agent"];
     const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
-    // Check if the source has already scanned
+    // Check if the source (device) has already scanned any QR code
     const existingScan = await ScanLog.findOne({ source });
 
     if (existingScan) {
-      // Update timestamp if source has already scanned
-      existingScan.timestamp = new Date();
+      // Update timestamp if the same phone scans again
+      existingScan.updatedAt = new Date();
       await existingScan.save();
 
       return res.status(200).send(`
@@ -89,9 +89,10 @@ exports.ScanDetailsGet = async (req, res) => {
       `);
     }
 
-    // Save a new scan entry if not found
+    // Save a new scan entry for a new device (different phone)
+    const newSlug = uuidv4(); // Generate a unique slug for the new device
     const scanEntry = new ScanLog({
-      slug,
+      slug: newSlug,
       source,
       ipAddress,
     });
