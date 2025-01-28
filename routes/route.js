@@ -11,7 +11,7 @@ router.get('/api/qr', QrController.Qrcode);
 
 // Route to log scan details
 router.post('/api/scan/:slug', QrController.ScanDetails);
-router.get('/api/scan/:slug', QrController.ScanDetailsGet); // Handle GET requests for QR scans
+router.get('/api/scan/:slug', QrController.ScanDetailsGet); 
 
 
 module.exports = router

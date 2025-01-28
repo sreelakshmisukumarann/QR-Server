@@ -16,7 +16,7 @@ const QRSchema = new mongoose.Schema(
       required: true, // IP address of the scanner
     },
   },
-  { timestamps: true } // This option is passed outside the field definitions
+  { timestamps: true } 
 );
 
 // Create model
